@@ -19,7 +19,7 @@ export default async function LoginPage({
       await signIn("credentials", {
         email: formData.get("email"),
         password: formData.get("password"),
-        redirectTo: "/admin",
+        redirectTo: "/admin/mi-espacio",
       });
     } catch (e) {
       if (e instanceof AuthError) {

@@ -3,11 +3,15 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { ROLE_LABELS, GESTION_INSTITUCIONAL, GESTION_EXPEDIENTES, GESTION_SESIONES, GESTION_PARTICIPACION, GESTION_USUARIOS, GESTION_IMPORTACIONES, PUEDE_VOTAR, hasRole } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+import { Avatar } from "@/components/Avatar";
+import { imagenUrl } from "@/lib/imagenes";
 
 export const metadata = { title: "Backoffice" };
 
 const NAV: { href: string; label: string; roles?: Role[] }[] = [
-  { href: "/admin", label: "Panel general" },
+  { href: "/admin/mi-espacio", label: "Mi espacio" },
+  { href: "/admin", label: "Panel general", roles: [Role.ADMIN, Role.PRESIDENTE, Role.SECRETARIO_PARLAMENTARIO, Role.SECRETARIO_ADMINISTRATIVO] },
   { href: "/admin/expedientes", label: "Mesa de Entradas", roles: GESTION_EXPEDIENTES },
   { href: "/admin/comisiones", label: "Comisiones" },
   { href: "/admin/sesiones", label: "Sesiones", roles: GESTION_SESIONES },
@@ -25,6 +29,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await auth();
   if (!session?.user) redirect("/login");
   const user = session.user;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { fotoId: true, nombre: true, concejal: { select: { nombre: true, apellido: true, fotoId: true, fotoUrl: true } } },
+  });
+  const nombreParts = (dbUser?.nombre ?? user.name ?? "Usuario").split(" ");
+  const avatarSrc =
+    imagenUrl(dbUser?.fotoId) ??
+    (dbUser?.concejal ? imagenUrl(dbUser.concejal.fotoId) ?? dbUser.concejal.fotoUrl : null);
 
   const items = NAV.filter((item) => !item.roles || hasRole(user.role, item.roles));
 
@@ -63,10 +76,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </Link>
           </div>
           <div className="ml-auto flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-slate-900">{user.name}</p>
-              <p className="text-xs text-slate-500">{ROLE_LABELS[user.role]}</p>
-            </div>
+            <Link href="/admin/mi-espacio" className="flex items-center gap-3 hover:opacity-90">
+              <Avatar
+                src={avatarSrc}
+                nombre={dbUser?.concejal?.nombre ?? nombreParts[0] ?? "U"}
+                apellido={dbUser?.concejal?.apellido ?? (nombreParts.slice(1).join(" ") || " ")}
+                size="sm"
+              />
+              <div className="text-right">
+                <p className="text-sm font-medium text-slate-900">{user.name}</p>
+                <p className="text-xs text-slate-500">{ROLE_LABELS[user.role]}</p>
+              </div>
+            </Link>
             <form
               action={async () => {
                 "use server";

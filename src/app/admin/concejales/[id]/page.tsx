@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -19,9 +20,16 @@ export default async function EditarConcejalPage({ params }: { params: Promise<{
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-900">
-        Editar concejal: {concejal.apellido}, {concejal.nombre}
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-slate-900">
+          Editar concejal: {concejal.apellido}, {concejal.nombre}
+        </h1>
+        {concejal.userId ? (
+          <Link href="/admin/mi-espacio" className="text-sm text-blue-700 underline">
+            Ver bandeja de trabajo
+          </Link>
+        ) : null}
+      </div>
       <Card>
         <CardHeader title="Datos del concejal" />
         <CardBody>

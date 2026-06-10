@@ -1,4 +1,4 @@
-import type { EstadoExpediente, TipoNormativa, OrigenExpediente, TipoSesion, EstadoSesion, TipoVotacion, MayoriaRequerida, TipoDictamen, CargoAutoridad, RolComision, EstadoSolicitud, EstadoAudiencia, CategoriaTransparencia, ValorVoto } from "@/generated/prisma/client";
+import type { EstadoExpediente, TipoNormativa, OrigenExpediente, TipoSesion, EstadoSesion, TipoVotacion, MayoriaRequerida, TipoDictamen, CargoAutoridad, RolComision, EstadoSolicitud, EstadoAudiencia, CategoriaTransparencia, ValorVoto, TipoTarea, PrioridadTarea, EstadoTarea } from "@/generated/prisma/client";
 
 export function fecha(d: Date | string | null | undefined): string {
   if (!d) return "—";
@@ -129,4 +129,36 @@ export const CATEGORIA_TRANSPARENCIA: Record<CategoriaTransparencia, string> = {
   ESCALA_SALARIAL: "Escalas Salariales",
   EJECUCION_PRESUPUESTARIA: "Ejecución Presupuestaria",
   OTRO: "Otros documentos",
+};
+
+export const TIPO_TAREA: Record<TipoTarea, string> = {
+  SESION: "Sesión",
+  COMISION: "Comisión",
+  DICTAMEN: "Dictamen",
+  VOTACION: "Votación",
+  EXPEDIENTE: "Expediente",
+  BANCA_CIUDADANA: "Banca ciudadana",
+  AUDIENCIA: "Audiencia",
+  GENERAL: "General",
+};
+
+export const PRIORIDAD_TAREA: Record<PrioridadTarea, string> = {
+  URGENTE: "Urgente",
+  ALTA: "Alta",
+  NORMAL: "Normal",
+  BAJA: "Baja",
+};
+
+export const PRIORIDAD_COLOR: Record<PrioridadTarea, string> = {
+  URGENTE: "bg-red-100 text-red-800",
+  ALTA: "bg-amber-100 text-amber-800",
+  NORMAL: "bg-slate-100 text-slate-700",
+  BAJA: "bg-gray-100 text-gray-600",
+};
+
+export const ESTADO_TAREA: Record<EstadoTarea, string> = {
+  PENDIENTE: "Pendiente",
+  EN_PROCESO: "En proceso",
+  COMPLETADA: "Completada",
+  CANCELADA: "Cancelada",
 };

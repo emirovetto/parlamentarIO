@@ -123,6 +123,47 @@ enum CategoriaTransparencia {
   OTRO
 }
 
+enum TipoTarea {
+  SESION
+  COMISION
+  DICTAMEN
+  VOTACION
+  EXPEDIENTE
+  BANCA_CIUDADANA
+  AUDIENCIA
+  GENERAL
+}
+
+enum PrioridadTarea {
+  URGENTE
+  ALTA
+  NORMAL
+  BAJA
+}
+
+enum EstadoTarea {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADA
+  CANCELADA
+}
+
+// ─────────────────────── Imágenes (fotos, logos) ───────────────────────
+
+model Imagen {
+  id         String   @id @default(cuid())
+  nombre     String
+  mime       String
+  datos      Bytes
+  hashSha256 String
+  tamanio    Int
+  createdAt  DateTime @default(now())
+
+  concejalFoto Concejal? @relation("ConcejalFoto")
+  userFoto     User?     @relation("UserFoto")
+  bloqueLogo   Bloque?   @relation("BloqueLogo")
+}
+
 // ─────────────────────── Identidad / Auth ───────────────────────
 
 model User {
@@ -130,11 +171,17 @@ model User {
   email        String    @unique
   passwordHash String
   nombre       String
+  telefono     String?
+  celular      String?
   role         Role      @default(CIUDADANO)
   activo       Boolean   @default(true)
+  fotoId       String?   @unique
+  foto         Imagen?   @relation("UserFoto", fields: [fotoId], references: [id], onDelete: SetNull)
   concejal     Concejal?
   bloqueId     String?
   bloque       Bloque?   @relation(fields: [bloqueId], references: [id])
+  tareas       Tarea[]   @relation("TareasUsuario")
+  tareasCreadas Tarea[]  @relation("TareasCreadas")
   auditLogs    AuditLog[]
   documentos   Documento[]
   createdAt    DateTime  @default(now())
@@ -142,15 +189,19 @@ model User {
 }
 
 model Bloque {
-  id         String     @id @default(cuid())
-  nombre     String     @unique
-  partido    String
-  color      String     @default("#2563eb")
-  activo     Boolean    @default(true)
-  concejales Concejal[]
-  usuarios   User[]
+  id          String     @id @default(cuid())
+  nombre      String     @unique
+  partido     String
+  color       String     @default("#2563eb")
+  email       String?
+  sitioWeb    String?
+  activo      Boolean    @default(true)
+  logoId      String?    @unique
+  logo        Imagen?    @relation("BloqueLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  concejales  Concejal[]
+  usuarios    User[]
   expedientes Expediente[]
-  createdAt  DateTime   @default(now())
+  createdAt   DateTime   @default(now())
 }
 
 model Concejal {
@@ -158,8 +209,13 @@ model Concejal {
   nombre        String
   apellido      String
   dni           String?    @unique
+  email         String?
+  telefono      String?
+  celular       String?
   biografia     String?
-  fotoUrl       String?
+  fotoUrl       String?    // fallback URL externa
+  fotoId        String?    @unique
+  foto          Imagen?    @relation("ConcejalFoto", fields: [fotoId], references: [id], onDelete: SetNull)
   partido       String
   mandatoInicio DateTime
   mandatoFin    DateTime
@@ -175,8 +231,41 @@ model Concejal {
   votos         Voto[]
   usosPalabra   UsoPalabra[]
   firmasDictamen FirmaDictamen[]
+  tareas        Tarea[]    @relation("TareasConcejal")
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+}
+
+// ─────────────────────── Tareas (bandeja de trabajo) ───────────────────────
+
+model Tarea {
+  id           String         @id @default(cuid())
+  titulo       String
+  descripcion  String?
+  tipo         TipoTarea      @default(GENERAL)
+  prioridad    PrioridadTarea @default(NORMAL)
+  estado       EstadoTarea    @default(PENDIENTE)
+  fechaLimite  DateTime?
+  link         String?
+  automatica   Boolean        @default(false)
+  userId       String?
+  user         User?          @relation("TareasUsuario", fields: [userId], references: [id], onDelete: Cascade)
+  concejalId   String?
+  concejal     Concejal?      @relation("TareasConcejal", fields: [concejalId], references: [id], onDelete: Cascade)
+  expedienteId String?
+  expediente   Expediente?    @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+  comisionId   String?
+  comision     Comision?      @relation(fields: [comisionId], references: [id], onDelete: SetNull)
+  sesionId     String?
+  sesion       Sesion?        @relation(fields: [sesionId], references: [id], onDelete: SetNull)
+  creadoPorId  String?
+  creadoPor    User?          @relation("TareasCreadas", fields: [creadoPorId], references: [id])
+  createdAt    DateTime       @default(now())
+  completedAt  DateTime?
+
+  @@index([userId, estado])
+  @@index([concejalId, estado])
+  @@index([fechaLimite])
 }
 
 model Autoridad {
@@ -199,6 +288,7 @@ model Comision {
   giros       GiroComision[]
   dictamenes  Dictamen[]
   reuniones   ReunionComision[]
+  tareas      Tarea[]
   createdAt   DateTime          @default(now())
 }
 
@@ -252,6 +342,7 @@ model Expediente {
   documentos     Documento[]
   puntosOrden    PuntoOrdenDelDia[]
   historial      MovimientoExpediente[]
+  tareas         Tarea[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -364,6 +455,7 @@ model Sesion {
   votaciones  Votacion[]
   usosPalabra UsoPalabra[]
   bancas      SolicitudBanca[]
+  tareas      Tarea[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 

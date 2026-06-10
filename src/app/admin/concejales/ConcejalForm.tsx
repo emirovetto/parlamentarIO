@@ -1,4 +1,6 @@
 import { Field, inputClass, btnPrimary } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
+import { imagenUrl } from "@/lib/imagenes";
 import type { Bloque, Concejal } from "@/generated/prisma/client";
 
 export function ConcejalForm({
@@ -13,9 +15,10 @@ export function ConcejalForm({
   conEmail?: boolean;
 }) {
   const toInputDate = (d?: Date) => (d ? new Date(d).toISOString().slice(0, 10) : "");
+  const fotoActual = concejal ? imagenUrl(concejal.fotoId) ?? concejal.fotoUrl : null;
 
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2">
+    <form action={action} encType="multipart/form-data" className="grid gap-4 sm:grid-cols-2">
       <Field label="Nombre" required>
         <input name="nombre" required defaultValue={concejal?.nombre} className={inputClass} />
       </Field>
@@ -37,13 +40,28 @@ export function ConcejalForm({
           ))}
         </select>
       </Field>
+      <Field label="Email institucional">
+        <input
+          name="email"
+          type="email"
+          defaultValue={concejal?.email ?? ""}
+          className={inputClass}
+          placeholder="apellido@concejo.gob.ar"
+        />
+      </Field>
       {conEmail ? (
-        <Field label="Email institucional (crea usuario para votar; contraseña inicial: su DNI)">
-          <input name="email" type="email" className={inputClass} placeholder="apellido@concejo.gob.ar" />
+        <Field label="Email para crear usuario (contraseña inicial: su DNI)">
+          <input name="emailUsuario" type="email" className={inputClass} placeholder="Si difiere del institucional" />
         </Field>
       ) : (
         <div aria-hidden />
       )}
+      <Field label="Teléfono">
+        <input name="telefono" type="tel" defaultValue={concejal?.telefono ?? ""} className={inputClass} />
+      </Field>
+      <Field label="Celular">
+        <input name="celular" type="tel" defaultValue={concejal?.celular ?? ""} className={inputClass} />
+      </Field>
       <Field label="Inicio de mandato" required>
         <input name="mandatoInicio" type="date" required defaultValue={toInputDate(concejal?.mandatoInicio)} className={inputClass} />
       </Field>
@@ -51,7 +69,10 @@ export function ConcejalForm({
         <input name="mandatoFin" type="date" required defaultValue={toInputDate(concejal?.mandatoFin)} className={inputClass} />
       </Field>
       <div className="sm:col-span-2">
-        <Field label="URL de foto">
+        <ImageUploadField label="Foto del concejal" name="foto" currentSrc={fotoActual} />
+      </div>
+      <div className="sm:col-span-2">
+        <Field label="URL de foto externa (opcional, si no subís archivo)">
           <input name="fotoUrl" type="url" defaultValue={concejal?.fotoUrl ?? ""} className={inputClass} />
         </Field>
       </div>

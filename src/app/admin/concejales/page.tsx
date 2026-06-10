@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { GESTION_INSTITUCIONAL } from "@/lib/rbac";
 import { Card, CardHeader, CardBody, Table, Badge, ButtonLink, Field, btnSecondary } from "@/components/ui";
+import { Avatar } from "@/components/Avatar";
+import { BloqueLogo } from "@/components/BloqueLogo";
+import { imagenUrl } from "@/lib/imagenes";
 import { fecha, CARGO_AUTORIDAD } from "@/lib/format";
 import { alternarConcejal, asignarAutoridad } from "./actions";
 import { CargoAutoridad } from "@/generated/prisma/client";
@@ -32,20 +35,34 @@ export default async function ConcejalesPage() {
 
       <Card>
         <CardHeader title="Cuerpo de concejales" subtitle="Mandatos vigentes e históricos" />
-        <Table headers={["Concejal", "Bloque", "Mandato", "Usuario", "Estado", ""]}>
+        <Table headers={["Concejal", "Bloque", "Contacto", "Mandato", "Usuario", "Estado", ""]}>
           {concejales.map((c) => (
             <tr key={c.id}>
               <td className="px-4 py-3">
-                <Link href={`/admin/concejales/${c.id}`} className="font-medium text-slate-900 hover:underline">
-                  {c.apellido}, {c.nombre}
-                </Link>
-                <p className="text-xs text-slate-500">{c.partido}</p>
+                <div className="flex items-center gap-3">
+                  <Avatar
+                    src={imagenUrl(c.fotoId) ?? c.fotoUrl}
+                    nombre={c.nombre}
+                    apellido={c.apellido}
+                    size="sm"
+                  />
+                  <div>
+                    <Link href={`/admin/concejales/${c.id}`} className="font-medium text-slate-900 hover:underline">
+                      {c.apellido}, {c.nombre}
+                    </Link>
+                    <p className="text-xs text-slate-500">{c.partido}</p>
+                  </div>
+                </div>
               </td>
               <td className="px-4 py-3">
                 <span className="inline-flex items-center gap-2 text-slate-600">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.bloque.color }} aria-hidden />
+                  <BloqueLogo nombre={c.bloque.nombre} color={c.bloque.color} logoSrc={imagenUrl(c.bloque.logoId)} size={20} />
                   {c.bloque.nombre}
                 </span>
+              </td>
+              <td className="px-4 py-3 text-xs text-slate-500">
+                {c.email ?? c.user?.email ?? "—"}
+                {c.telefono ? <><br />{c.telefono}</> : null}
               </td>
               <td className="px-4 py-3 text-slate-600">
                 {fecha(c.mandatoInicio)} — {fecha(c.mandatoFin)}

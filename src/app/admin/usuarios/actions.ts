@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/session";
 import { GESTION_USUARIOS } from "@/lib/rbac";
+import { reemplazarImagen } from "@/lib/imagenes";
 import { Role } from "@/generated/prisma/client";
 
 const userSchema = z.object({
@@ -17,6 +18,8 @@ const userSchema = z.object({
   password: z.string().min(6).optional().or(z.literal("")),
   bloqueId: z.string().optional().or(z.literal("")),
   concejalId: z.string().optional().or(z.literal("")),
+  telefono: z.string().max(30).optional().or(z.literal("")),
+  celular: z.string().max(30).optional().or(z.literal("")),
 });
 
 function parseUser(formData: FormData) {
@@ -27,7 +30,14 @@ function parseUser(formData: FormData) {
     password: formData.get("password") ?? "",
     bloqueId: formData.get("bloqueId") ?? "",
     concejalId: formData.get("concejalId") ?? "",
+    telefono: formData.get("telefono") ?? "",
+    celular: formData.get("celular") ?? "",
   });
+}
+
+async function procesarFoto(formData: FormData, fotoIdActual?: string | null) {
+  const archivo = formData.get("foto") as File | null;
+  return reemplazarImagen(fotoIdActual, archivo);
 }
 
 export async function crearUsuario(formData: FormData) {
@@ -38,6 +48,7 @@ export async function crearUsuario(formData: FormData) {
   const exists = await prisma.user.findUnique({ where: { email: data.email } });
   if (exists) throw new Error("Ya existe un usuario con ese email");
 
+  const fotoId = await procesarFoto(formData);
   const passwordHash = await bcrypt.hash(data.password, 10);
   const user = await prisma.user.create({
     data: {
@@ -46,6 +57,9 @@ export async function crearUsuario(formData: FormData) {
       role: data.role,
       passwordHash,
       bloqueId: data.bloqueId || null,
+      telefono: data.telefono || null,
+      celular: data.celular || null,
+      fotoId: fotoId ?? null,
     },
   });
 
@@ -64,11 +78,24 @@ export async function crearUsuario(formData: FormData) {
 export async function actualizarUsuario(id: string, formData: FormData) {
   const admin = await requireRole(GESTION_USUARIOS);
   const data = parseUser(formData);
+  const actual = await prisma.user.findUniqueOrThrow({ where: { id } });
+  const fotoId = await procesarFoto(formData, actual.fotoId);
 
-  const update: { nombre: string; role: Role; bloqueId: string | null; passwordHash?: string } = {
+  const update: {
+    nombre: string;
+    role: Role;
+    bloqueId: string | null;
+    telefono: string | null;
+    celular: string | null;
+    fotoId: string | null;
+    passwordHash?: string;
+  } = {
     nombre: data.nombre,
     role: data.role,
     bloqueId: data.bloqueId || null,
+    telefono: data.telefono || null,
+    celular: data.celular || null,
+    fotoId: fotoId ?? null,
   };
   if (data.password) update.passwordHash = await bcrypt.hash(data.password, 10);
 

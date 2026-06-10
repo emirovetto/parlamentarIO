@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui";
+import { Avatar } from "@/components/Avatar";
+import { BloqueLogo } from "@/components/BloqueLogo";
+import { imagenUrl } from "@/lib/imagenes";
 import { fecha, nroExpediente, TIPO_NORMATIVA, ESTADO_EXPEDIENTE, ESTADO_COLOR, ROL_COMISION, CARGO_AUTORIDAD } from "@/lib/format";
 
 export const metadata = { title: "Perfil de concejal" };
@@ -24,34 +27,60 @@ export default async function ConcejalPerfilPage({ params }: { params: Promise<{
   });
   if (!concejal) notFound();
 
-  // Estadísticas de asistencia y votos
   const [sesionesFinalizadas, presentismos, totalVotos] = await Promise.all([
     prisma.sesion.count({ where: { estado: "FINALIZADA" } }),
     prisma.asistencia.count({ where: { concejalId: id, presente: true, sesion: { estado: "FINALIZADA" } } }),
     prisma.voto.count({ where: { concejalId: id } }),
   ]);
   const asistenciaPct = sesionesFinalizadas > 0 ? Math.round((presentismos / sesionesFinalizadas) * 100) : null;
+  const fotoSrc = imagenUrl(concejal.fotoId) ?? concejal.fotoUrl;
+  const logoSrc = imagenUrl(concejal.bloque.logoId);
 
   return (
     <div className="space-y-8">
-      <div>
-        <Link href="/concejales" className="text-sm text-blue-700 underline">← Concejales</Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">
-            {concejal.nombre} {concejal.apellido}
-          </h1>
-          <Badge className="text-white" >
-            <span className="flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ backgroundColor: concejal.bloque.color }}>
-              {concejal.bloque.nombre}
-            </span>
-          </Badge>
-          {concejal.autoridades.map((a) => (
-            <Badge key={a.id} className="bg-amber-100 text-amber-800">{CARGO_AUTORIDAD[a.cargo]}</Badge>
-          ))}
+      <Link href="/concejales" className="text-sm text-blue-700 underline">
+        ← Concejales
+      </Link>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-2" style={{ backgroundColor: concejal.bloque.color }} />
+        <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-start">
+          <Avatar src={fotoSrc} nombre={concejal.nombre} apellido={concejal.apellido} size="xl" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold text-slate-900">
+                {concejal.nombre} {concejal.apellido}
+              </h1>
+              {concejal.autoridades.map((a) => (
+                <Badge key={a.id} className="bg-amber-100 text-amber-800">
+                  {CARGO_AUTORIDAD[a.cargo]}
+                </Badge>
+              ))}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <BloqueLogo nombre={concejal.bloque.nombre} color={concejal.bloque.color} logoSrc={logoSrc} size={28} />
+              <span className="font-medium text-slate-700">{concejal.bloque.nombre}</span>
+              <span className="text-slate-400">·</span>
+              <span className="text-slate-600">{concejal.partido}</span>
+            </div>
+            <p className="mt-2 text-sm text-slate-500">
+              Mandato {fecha(concejal.mandatoInicio)} — {fecha(concejal.mandatoFin)}
+            </p>
+            {(concejal.email || concejal.telefono || concejal.celular) && (
+              <ul className="mt-4 space-y-1 text-sm text-slate-600">
+                {concejal.email ? (
+                  <li>
+                    <a href={`mailto:${concejal.email}`} className="text-blue-700 hover:underline">
+                      {concejal.email}
+                    </a>
+                  </li>
+                ) : null}
+                {concejal.telefono ? <li>Tel. {concejal.telefono}</li> : null}
+                {concejal.celular ? <li>Cel. {concejal.celular}</li> : null}
+              </ul>
+            )}
+          </div>
         </div>
-        <p className="mt-1 text-sm text-slate-500">
-          {concejal.partido} · Mandato {fecha(concejal.mandatoInicio)} — {fecha(concejal.mandatoFin)}
-        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -71,13 +100,17 @@ export default async function ConcejalPerfilPage({ params }: { params: Promise<{
 
       {concejal.biografia ? (
         <section aria-labelledby="bio">
-          <h2 id="bio" className="text-lg font-semibold text-slate-900">Biografía</h2>
+          <h2 id="bio" className="text-lg font-semibold text-slate-900">
+            Biografía
+          </h2>
           <p className="mt-2 whitespace-pre-line text-slate-600">{concejal.biografia}</p>
         </section>
       ) : null}
 
       <section aria-labelledby="comisiones">
-        <h2 id="comisiones" className="text-lg font-semibold text-slate-900">Comisiones que integra</h2>
+        <h2 id="comisiones" className="text-lg font-semibold text-slate-900">
+          Comisiones que integra
+        </h2>
         {concejal.comisiones.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">No integra comisiones actualmente.</p>
         ) : (
@@ -92,7 +125,9 @@ export default async function ConcejalPerfilPage({ params }: { params: Promise<{
       </section>
 
       <section aria-labelledby="proyectos">
-        <h2 id="proyectos" className="text-lg font-semibold text-slate-900">Proyectos presentados</h2>
+        <h2 id="proyectos" className="text-lg font-semibold text-slate-900">
+          Proyectos presentados
+        </h2>
         {concejal.autorias.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">Sin proyectos registrados.</p>
         ) : (

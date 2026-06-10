@@ -1,4 +1,6 @@
 import { Field, inputClass, btnPrimary } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
+import { imagenUrl } from "@/lib/imagenes";
 import { ROLE_LABELS } from "@/lib/rbac";
 import type { Bloque, Role, User } from "@/generated/prisma/client";
 
@@ -27,13 +29,21 @@ export function UsuarioForm({
   usuario?: User & { concejal?: { id: string } | null };
   esNuevo?: boolean;
 }) {
+  const fotoActual = usuario ? imagenUrl(usuario.fotoId) : null;
+
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2">
+    <form action={action} encType="multipart/form-data" className="grid gap-4 sm:grid-cols-2">
       <Field label="Nombre completo" required>
         <input name="nombre" required defaultValue={usuario?.nombre} className={inputClass} />
       </Field>
       <Field label="Email institucional" required>
         <input name="email" type="email" required defaultValue={usuario?.email} readOnly={!esNuevo} className={inputClass} />
+      </Field>
+      <Field label="Teléfono">
+        <input name="telefono" type="tel" defaultValue={usuario?.telefono ?? ""} className={inputClass} />
+      </Field>
+      <Field label="Celular">
+        <input name="celular" type="tel" defaultValue={usuario?.celular ?? ""} className={inputClass} />
       </Field>
       <Field label="Rol en el sistema" required>
         <select name="role" required defaultValue={usuario?.role} className={inputClass}>
@@ -69,6 +79,9 @@ export function UsuarioForm({
             ))}
         </select>
       </Field>
+      <div className="sm:col-span-2">
+        <ImageUploadField label="Foto de perfil" name="foto" currentSrc={fotoActual} />
+      </div>
       <div className="sm:col-span-2">
         <button type="submit" className={btnPrimary}>
           Guardar usuario
