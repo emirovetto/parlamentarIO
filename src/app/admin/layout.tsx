@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
-import { ROLE_LABELS, GESTION_INSTITUCIONAL, GESTION_EXPEDIENTES, GESTION_SESIONES, GESTION_PARTICIPACION, GESTION_USUARIOS, GESTION_IMPORTACIONES, PUEDE_VOTAR, hasRole } from "@/lib/rbac";
+import { ROLE_LABELS, GESTION_INSTITUCIONAL, GESTION_EXPEDIENTES, GESTION_SESIONES, GESTION_PARTICIPACION, GESTION_USUARIOS, GESTION_IMPORTACIONES, GESTION_PORTAL, PUEDE_VOTAR, hasRole } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/Avatar";
@@ -20,6 +20,10 @@ const NAV: { href: string; label: string; roles?: Role[] }[] = [
   { href: "/admin/concejales", label: "Concejales", roles: GESTION_INSTITUCIONAL },
   { href: "/admin/bloques", label: "Bloques", roles: GESTION_INSTITUCIONAL },
   { href: "/admin/importaciones", label: "Importaciones", roles: GESTION_IMPORTACIONES },
+  { href: "/admin/configuracion", label: "Portal público", roles: GESTION_PORTAL },
+  { href: "/admin/noticias", label: "Noticias", roles: GESTION_PORTAL },
+  { href: "/admin/paginas", label: "Páginas", roles: GESTION_PORTAL },
+  { href: "/admin/plantillas", label: "Plantillas", roles: GESTION_PORTAL },
   { href: "/admin/participacion", label: "Participación ciudadana", roles: GESTION_PARTICIPACION },
   { href: "/admin/transparencia", label: "Transparencia", roles: GESTION_INSTITUCIONAL },
   { href: "/admin/auditoria", label: "Auditoría", roles: [Role.ADMIN, Role.PRESIDENTE] },

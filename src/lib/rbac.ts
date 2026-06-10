@@ -69,6 +69,14 @@ export const GESTION_IMPORTACIONES: Role[] = [
   Role.SECRETARIO_PARLAMENTARIO,
 ];
 
+/** Pueden gestionar portal público: noticias, configuración, plantillas, páginas */
+export const GESTION_PORTAL: Role[] = [
+  Role.ADMIN,
+  Role.SECRETARIO_ADMINISTRATIVO,
+  Role.SECRETARIO_PARLAMENTARIO,
+  Role.PRESIDENTE,
+];
+
 export function hasRole(role: Role | undefined | null, allowed: Role[]): boolean {
   return !!role && allowed.includes(role);
 }

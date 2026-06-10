@@ -7,6 +7,7 @@ import { Card, CardHeader, CardBody, Badge, Field, inputClass, btnPrimary, btnSe
 import { YoutubeEmbed } from "@/components/YoutubeEmbed";
 import { fechaHora, TIPO_SESION, ESTADO_SESION, nroExpediente, TIPO_DICTAMEN } from "@/lib/format";
 import { OrdenDelDiaEditor } from "./OrdenDelDiaEditor";
+import { SesionDiarioForm } from "../SesionDiarioForm";
 import {
   agregarPunto, publicarSesion, cambiarEstadoSesion,
   guardarActaYVideo, marcarTimestampPunto,
@@ -172,18 +173,13 @@ export default async function SesionDetallePage({ params }: { params: Promise<{ 
                   {sesion.videoUrl ? (
                     <YoutubeEmbed url={sesion.videoUrl} title={`Grabación sesión N° ${sesion.numero}`} />
                   ) : null}
-                  <form action={guardarActaYVideo.bind(null, sesion.id)} className="space-y-3">
-                    <Field label="Acta de la sesión">
-                      <textarea name="acta" rows={8} defaultValue={sesion.acta ?? ""} className={inputClass} placeholder="En la ciudad de..., a los ... días del mes de ..., se reúnen..." />
-                    </Field>
-                    <Field label="URL del video archivado (grabación post-transmisión)">
-                      <input name="videoUrl" type="url" defaultValue={sesion.videoUrl ?? ""} className={inputClass} placeholder="https://www.youtube.com/watch?v=..." />
-                    </Field>
-                    <Field label="Notas y observaciones post-sesión">
-                      <textarea name="notasPostSesion" rows={3} defaultValue={sesion.notasPostSesion ?? ""} className={inputClass} placeholder="Incidentes, acuerdos informales, temas pendientes..." />
-                    </Field>
-                    <button type="submit" className={btnPrimary}>Guardar diario</button>
-                  </form>
+                  <SesionDiarioForm
+                    sesionId={sesion.id}
+                    actaDefault={sesion.acta ?? ""}
+                    videoUrlDefault={sesion.videoUrl ?? ""}
+                    notasDefault={sesion.notasPostSesion ?? ""}
+                    action={guardarActaYVideo.bind(null, sesion.id)}
+                  />
                   {(sesion.videoUrl || sesion.videoEnVivoUrl) ? (
                     <div className="space-y-2 border-t border-slate-100 pt-4">
                       <p className="text-sm font-medium text-slate-700">Marcas de tiempo por punto (hh:mm:ss en el video)</p>

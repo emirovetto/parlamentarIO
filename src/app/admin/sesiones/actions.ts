@@ -14,13 +14,30 @@ import { EstadoExpediente, EstadoSesion, TipoSesion, TipoVotacion, MayoriaRequer
 export async function crearSesion(formData: FormData) {
   const user = await requireRole(GESTION_SESIONES);
   const data = z
-    .object({ tipo: z.nativeEnum(TipoSesion), fecha: z.coerce.date() })
-    .parse({ tipo: formData.get("tipo"), fecha: formData.get("fecha") });
+    .object({
+      tipo: z.nativeEnum(TipoSesion),
+      fecha: z.coerce.date(),
+      videoEnVivoUrl: z.string().url().optional().or(z.literal("")),
+      publicada: z.coerce.boolean().optional(),
+    })
+    .parse({
+      tipo: formData.get("tipo"),
+      fecha: formData.get("fecha"),
+      videoEnVivoUrl: formData.get("videoEnVivoUrl") ?? "",
+      publicada: formData.get("publicada") === "on",
+    });
 
   const anio = data.fecha.getFullYear();
   const ultima = await prisma.sesion.findFirst({ where: { anio }, orderBy: { numero: "desc" } });
   const sesion = await prisma.sesion.create({
-    data: { numero: (ultima?.numero ?? 0) + 1, anio, ...data },
+    data: {
+      numero: (ultima?.numero ?? 0) + 1,
+      anio,
+      tipo: data.tipo,
+      fecha: data.fecha,
+      videoEnVivoUrl: data.videoEnVivoUrl || null,
+      publicada: data.publicada ?? false,
+    },
   });
   await audit({ userId: user.id, accion: "CREAR", entidad: "Sesion", entidadId: sesion.id, datos: { numero: sesion.numero, anio } });
   redirect(`/admin/sesiones/${sesion.id}`);

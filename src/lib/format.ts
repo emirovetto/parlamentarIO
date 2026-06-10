@@ -1,4 +1,4 @@
-import type { EstadoExpediente, TipoNormativa, OrigenExpediente, TipoSesion, EstadoSesion, TipoVotacion, MayoriaRequerida, TipoDictamen, CargoAutoridad, RolComision, EstadoSolicitud, EstadoAudiencia, CategoriaTransparencia, ValorVoto, TipoTarea, PrioridadTarea, EstadoTarea } from "@/generated/prisma/client";
+import type { EstadoExpediente, TipoNormativa, OrigenExpediente, TipoSesion, EstadoSesion, TipoVotacion, MayoriaRequerida, TipoDictamen, CargoAutoridad, RolComision, EstadoSolicitud, EstadoAudiencia, CategoriaTransparencia, ValorVoto, TipoTarea, PrioridadTarea, EstadoTarea, CategoriaNoticia, TipoPlantilla } from "@/generated/prisma/client";
 
 export function fecha(d: Date | string | null | undefined): string {
   if (!d) return "—";
@@ -161,4 +161,21 @@ export const ESTADO_TAREA: Record<EstadoTarea, string> = {
   EN_PROCESO: "En proceso",
   COMPLETADA: "Completada",
   CANCELADA: "Cancelada",
+};
+
+export const CATEGORIA_NOTICIA: Record<CategoriaNoticia, string> = {
+  GENERAL: "General",
+  LEGISLATIVA: "Legislativa",
+  INSTITUCIONAL: "Institucional",
+  CULTURA: "Cultura",
+  COMUNIDAD: "Comunidad",
+};
+
+export const TIPO_PLANTILLA: Record<TipoPlantilla, string> = {
+  ACTA_SESION: "Acta de sesión",
+  ACTA_COMISION: "Acta de comisión",
+  DICTAMEN: "Dictamen",
+  ORDEN_DEL_DIA: "Orden del Día",
+  MEMBRETE: "Membrete institucional",
+  CARTA: "Carta / oficio",
 };

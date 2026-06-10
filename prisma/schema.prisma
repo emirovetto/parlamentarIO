@@ -148,6 +148,23 @@ enum EstadoTarea {
   CANCELADA
 }
 
+enum CategoriaNoticia {
+  GENERAL
+  LEGISLATIVA
+  INSTITUCIONAL
+  CULTURA
+  COMUNIDAD
+}
+
+enum TipoPlantilla {
+  ACTA_SESION
+  ACTA_COMISION
+  DICTAMEN
+  ORDEN_DEL_DIA
+  MEMBRETE
+  CARTA
+}
+
 // ─────────────────────── Imágenes (fotos, logos) ───────────────────────
 
 model Imagen {
@@ -159,9 +176,11 @@ model Imagen {
   tamanio    Int
   createdAt  DateTime @default(now())
 
-  concejalFoto Concejal? @relation("ConcejalFoto")
-  userFoto     User?     @relation("UserFoto")
-  bloqueLogo   Bloque?   @relation("BloqueLogo")
+  concejalFoto  Concejal?           @relation("ConcejalFoto")
+  userFoto      User?               @relation("UserFoto")
+  bloqueLogo    Bloque?             @relation("BloqueLogo")
+  sitioLogo     ConfiguracionSitio? @relation("SitioLogo")
+  noticiaImagen Noticia?            @relation("NoticiaImagen")
 }
 
 // ─────────────────────── Identidad / Auth ───────────────────────
@@ -182,6 +201,7 @@ model User {
   bloque       Bloque?   @relation(fields: [bloqueId], references: [id])
   tareas       Tarea[]   @relation("TareasUsuario")
   tareasCreadas Tarea[]  @relation("TareasCreadas")
+  noticias     Noticia[]
   auditLogs    AuditLog[]
   documentos   Documento[]
   createdAt    DateTime  @default(now())
@@ -582,6 +602,72 @@ model InscripcionAudiencia {
   createdAt   DateTime         @default(now())
 
   @@unique([audienciaId, dni])
+}
+
+// ─────────────────────── Portal público (CMS) ───────────────────────
+
+model ConfiguracionSitio {
+  id                String   @id @default("sitio")
+  nombreMunicipio   String   @default("Municipio")
+  nombreConcejo     String   @default("Concejo Deliberante")
+  provincia         String   @default("Santa Fe")
+  slogan            String?
+  colorPrimario     String   @default("#1e3a5f")
+  colorSecundario   String   @default("#0ea5e9")
+  logoId            String?  @unique
+  logo              Imagen?  @relation("SitioLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  direccion         String?
+  telefono          String?
+  email             String?
+  urlYoutube        String?
+  urlFacebook       String?
+  urlInstagram      String?
+  urlTwitter        String?
+  textoHero         String?
+  textoFooter       String?
+  mostrarSesionEnVivo Boolean @default(true)
+  updatedAt         DateTime @updatedAt
+}
+
+model Noticia {
+  id          String           @id @default(cuid())
+  titulo      String
+  slug        String           @unique
+  resumen     String?
+  cuerpo      String
+  categoria   CategoriaNoticia @default(GENERAL)
+  publicada   Boolean          @default(false)
+  destacada   Boolean          @default(false)
+  imagenId    String?          @unique
+  imagen      Imagen?          @relation("NoticiaImagen", fields: [imagenId], references: [id], onDelete: SetNull)
+  autorId     String?
+  autor       User?            @relation(fields: [autorId], references: [id])
+  publicadaEn DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([publicada, publicadaEn])
+}
+
+model PaginaInstitucional {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  titulo    String
+  contenido String
+  publicada Boolean  @default(true)
+  orden     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model PlantillaDocumento {
+  id        String        @id @default(cuid())
+  nombre    String
+  tipo      TipoPlantilla
+  contenido String        // Plantilla con variables {{nombre}}
+  activa    Boolean       @default(true)
+  esDefault Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 // ─────────────────────── Auditoría (append-only) ───────────────────────

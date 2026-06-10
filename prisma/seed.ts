@@ -259,6 +259,100 @@ async function main() {
     });
   }
 
+  // ── Configuración del portal ──
+  await prisma.configuracionSitio.upsert({
+    where: { id: "sitio" },
+    update: {},
+    create: {
+      id: "sitio",
+      nombreMunicipio: "Ciudad Demo",
+      nombreConcejo: "Concejo Deliberante",
+      provincia: "Santa Fe",
+      slogan: "El Concejo Municipal, abierto a la ciudadanía",
+      direccion: "Av. San Martín 1200 — Ciudad Demo",
+      telefono: "(0342) 457-1800",
+      email: "concejo@ciudaddemo.gob.ar",
+      textoHero: "Seguí los proyectos de ordenanza, las sesiones del cuerpo y la actividad de tus concejales.",
+    },
+  });
+
+  const paginasDemo = [
+    { slug: "el-concejo", titulo: "El Concejo", orden: 1, contenido: "El Honorable Concejo Deliberante es el órgano legislativo del municipio. Integrado por concejales electos por voto popular, sanciona ordenanzas, resoluciones y controla la gestión del Departamento Ejecutivo Municipal conforme a la Ley Orgánica de Municipalidades N° 2756." },
+    { slug: "contacto", titulo: "Contacto", orden: 2, contenido: "Dirección: Av. San Martín 1200\nTeléfono: (0342) 457-1800\nEmail: concejo@ciudaddemo.gob.ar\nHorario de atención: lunes a viernes de 8 a 14 hs." },
+    { slug: "reglamento", titulo: "Reglamento Interno", orden: 3, contenido: "El Reglamento Interno del Honorable Concejo Deliberante regula el funcionamiento de las sesiones, comisiones, mayorías requeridas y procedimientos parlamentarios." },
+  ];
+  for (const p of paginasDemo) {
+    await prisma.paginaInstitucional.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: p,
+    });
+  }
+
+  const plantillaCount = await prisma.plantillaDocumento.count();
+  if (plantillaCount === 0) {
+    await prisma.plantillaDocumento.create({
+      data: {
+        nombre: "Acta de sesión estándar",
+        tipo: "ACTA_SESION",
+        esDefault: true,
+        contenido: `ACTA DE SESIÓN {{tipoSesion}} N° {{numero}}/{{anio}}
+
+En la ciudad de {{ciudad}}, provincia de {{provincia}}, a los {{dia}} días del mes de {{mes}} de {{anioCalendario}}, siendo las {{hora}} horas, en el recinto del {{concejo}} de {{municipio}}, bajo la presidencia de {{presidente}}, se reúne el cuerpo legislativo.
+
+ASISTENCIA:
+{{listaAsistentes}}
+
+AUSENTES:
+{{listaAusentes}}
+
+QUÓRUM: {{quorum}}
+
+ORDEN DEL DÍA:
+{{ordenDelDia}}
+
+VOTACIONES:
+{{votaciones}}
+
+DESARROLLO:
+{{desarrollo}}
+
+Sin otro particular, se da por finalizada la sesión a las {{horaCierre}} horas.
+
+{{secretarioParlamentario}}
+Secretario Parlamentario`,
+      },
+    });
+  }
+
+  const noticiasCount = await prisma.noticia.count();
+  if (noticiasCount === 0) {
+    await prisma.noticia.createMany({
+      data: [
+        {
+          titulo: "Sesión ordinaria con nuevo orden del día publicado",
+          slug: "sesion-ordinaria-orden-del-dia",
+          resumen: "El Concejo convocó a sesión ordinaria con proyectos de ordenanza en tratamiento.",
+          cuerpo: "La Secretaría Parlamentaria informa que se encuentra publicado el Orden del Día de la próxima sesión ordinaria. Los ciudadanos pueden consultar los expedientes en el Digesto Legislativo y seguir la transmisión en vivo desde el portal.",
+          categoria: "LEGISLATIVA",
+          publicada: true,
+          destacada: true,
+          publicadaEn: new Date(),
+        },
+        {
+          titulo: "Audiencia pública sobre ordenamiento urbano",
+          slug: "audiencia-ordenamiento-urbano",
+          resumen: "Vecinos y organizaciones pueden inscribirse para exponer en la audiencia convocada.",
+          cuerpo: "Se encuentra abierta la inscripción para la audiencia pública sobre el nuevo Código de Ordenamiento Urbano. La participación ciudadana es un pilar del proceso legislativo local.",
+          categoria: "COMUNIDAD",
+          publicada: true,
+          destacada: true,
+          publicadaEn: new Date(),
+        },
+      ],
+    });
+  }
+
   console.log("Seed completado.");
   console.log("Usuarios (contraseña: parlamentario2026):");
   console.log("  admin@concejo.gob.ar (Admin)");

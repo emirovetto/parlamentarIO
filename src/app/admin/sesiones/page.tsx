@@ -73,6 +73,13 @@ export default async function SesionesPage() {
               <Field label="Fecha y hora" required>
                 <input name="fecha" type="datetime-local" required className={inputClass} />
               </Field>
+              <Field label="YouTube en vivo (opcional, se puede cargar después)">
+                <input name="videoEnVivoUrl" type="url" className={inputClass} placeholder="https://www.youtube.com/live/..." />
+              </Field>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="publicada" className="rounded" />
+                Publicar orden del día en el portal al convocar
+              </label>
               <button type="submit" className={btnPrimary}>
                 Convocar
               </button>
