@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
-import { ROLE_LABELS, GESTION_INSTITUCIONAL, GESTION_EXPEDIENTES, GESTION_SESIONES, GESTION_PARTICIPACION, PUEDE_VOTAR, hasRole } from "@/lib/rbac";
+import { ROLE_LABELS, GESTION_INSTITUCIONAL, GESTION_EXPEDIENTES, GESTION_SESIONES, GESTION_PARTICIPACION, GESTION_USUARIOS, GESTION_IMPORTACIONES, PUEDE_VOTAR, hasRole } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/client";
 
 export const metadata = { title: "Backoffice" };
@@ -12,8 +12,10 @@ const NAV: { href: string; label: string; roles?: Role[] }[] = [
   { href: "/admin/comisiones", label: "Comisiones" },
   { href: "/admin/sesiones", label: "Sesiones", roles: GESTION_SESIONES },
   { href: "/admin/votar", label: "Mi banca (votar)", roles: PUEDE_VOTAR },
+  { href: "/admin/usuarios", label: "Usuarios", roles: GESTION_USUARIOS },
   { href: "/admin/concejales", label: "Concejales", roles: GESTION_INSTITUCIONAL },
   { href: "/admin/bloques", label: "Bloques", roles: GESTION_INSTITUCIONAL },
+  { href: "/admin/importaciones", label: "Importaciones", roles: GESTION_IMPORTACIONES },
   { href: "/admin/participacion", label: "Participación ciudadana", roles: GESTION_PARTICIPACION },
   { href: "/admin/transparencia", label: "Transparencia", roles: GESTION_INSTITUCIONAL },
   { href: "/admin/auditoria", label: "Auditoría", roles: [Role.ADMIN, Role.PRESIDENTE] },

@@ -344,15 +344,20 @@ model Documento {
 // ─────────────────────── Sesiones ───────────────────────
 
 model Sesion {
-  id          String       @id @default(cuid())
-  numero      Int
-  anio        Int
-  tipo        TipoSesion   @default(ORDINARIA)
-  estado      EstadoSesion @default(PROGRAMADA)
-  fecha       DateTime
-  videoUrl    String?
-  acta        String?
-  publicada   Boolean      @default(false)
+  id              String       @id @default(cuid())
+  numero          Int
+  anio            Int
+  tipo            TipoSesion   @default(ORDINARIA)
+  estado          EstadoSesion @default(PROGRAMADA)
+  fecha           DateTime
+  videoEnVivoUrl  String?      // Link YouTube de la transmisión en vivo
+  videoUrl        String?      // Grabación archivada post-sesión
+  acta            String?
+  notasPostSesion String?      // Observaciones / resumen posterior
+  horaInicioReal  DateTime?    // Marca real de apertura del recinto
+  horaFinReal     DateTime?    // Marca real de cierre
+  archivada       Boolean      @default(false) // Sesión cerrada y publicada en el archivo histórico
+  publicada       Boolean      @default(false)
   puntos      PuntoOrdenDelDia[]
   asistencias Asistencia[]
   mociones    Mocion[]

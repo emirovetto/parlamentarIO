@@ -84,23 +84,81 @@ export async function reordenarPuntos(sesionId: string, ordenIds: string[]) {
 
 export async function cambiarEstadoSesion(sesionId: string, estado: EstadoSesion) {
   const user = await requireRole(GESTION_SESIONES);
-  await prisma.sesion.update({ where: { id: sesionId }, data: { estado } });
+  const extra: { horaInicioReal?: Date; horaFinReal?: Date } = {};
+  if (estado === EstadoSesion.EN_CURSO) extra.horaInicioReal = new Date();
+  if (estado === EstadoSesion.FINALIZADA) extra.horaFinReal = new Date();
+  await prisma.sesion.update({ where: { id: sesionId }, data: { estado, ...extra } });
   await audit({ userId: user.id, accion: `SESION_${estado}`, entidad: "Sesion", entidadId: sesionId });
   revalidatePath(`/admin/sesiones/${sesionId}`);
   revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidatePath("/sesiones");
+  revalidatePath("/");
+}
+
+/** Link de YouTube de la transmisión en vivo (visible en portal mientras la sesión está EN_CURSO). */
+export async function guardarTransmisionEnVivo(sesionId: string, formData: FormData) {
+  const user = await requireRole(GESTION_SESIONES);
+  const videoEnVivoUrl = z.string().url().parse(formData.get("videoEnVivoUrl"));
+  await prisma.sesion.update({ where: { id: sesionId }, data: { videoEnVivoUrl } });
+  await audit({ userId: user.id, accion: "GUARDAR_TRANSMISION_VIVO", entidad: "Sesion", entidadId: sesionId, datos: { videoEnVivoUrl } });
+  revalidatePath(`/admin/sesiones/${sesionId}`);
+  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidatePath("/sesiones");
+  revalidatePath("/");
 }
 
 export async function guardarActaYVideo(sesionId: string, formData: FormData) {
   const user = await requireRole(GESTION_SESIONES);
   const data = z
-    .object({ acta: z.string().optional().or(z.literal("")), videoUrl: z.string().url().optional().or(z.literal("")) })
-    .parse({ acta: formData.get("acta") ?? "", videoUrl: formData.get("videoUrl") ?? "" });
+    .object({
+      acta: z.string().optional().or(z.literal("")),
+      videoUrl: z.string().url().optional().or(z.literal("")),
+      notasPostSesion: z.string().max(10000).optional().or(z.literal("")),
+    })
+    .parse({
+      acta: formData.get("acta") ?? "",
+      videoUrl: formData.get("videoUrl") ?? "",
+      notasPostSesion: formData.get("notasPostSesion") ?? "",
+    });
   await prisma.sesion.update({
     where: { id: sesionId },
-    data: { acta: data.acta || null, videoUrl: data.videoUrl || null },
+    data: {
+      acta: data.acta || null,
+      videoUrl: data.videoUrl || null,
+      notasPostSesion: data.notasPostSesion || null,
+    },
   });
   await audit({ userId: user.id, accion: "GUARDAR_ACTA", entidad: "Sesion", entidadId: sesionId });
   revalidatePath(`/admin/sesiones/${sesionId}`);
+  revalidatePath(`/sesiones/${sesionId}`);
+}
+
+/**
+ * Archiva la sesión: pasa el link en vivo a grabación si no hay video archivado,
+ * marca archivada=true y la deja visible en el historial público.
+ */
+export async function archivarSesion(sesionId: string, formData: FormData) {
+  const user = await requireRole(GESTION_SESIONES);
+  const videoArchivado = z.string().url().optional().or(z.literal("")).parse(formData.get("videoUrl") ?? "");
+  const sesion = await prisma.sesion.findUniqueOrThrow({ where: { id: sesionId } });
+
+  const videoUrl = videoArchivado || sesion.videoUrl || sesion.videoEnVivoUrl || null;
+
+  await prisma.sesion.update({
+    where: { id: sesionId },
+    data: {
+      videoUrl,
+      videoEnVivoUrl: null,
+      archivada: true,
+      publicada: true,
+      estado: EstadoSesion.FINALIZADA,
+      horaFinReal: sesion.horaFinReal ?? new Date(),
+    },
+  });
+  await audit({ userId: user.id, accion: "ARCHIVAR_SESION", entidad: "Sesion", entidadId: sesionId, datos: { videoUrl } });
+  revalidatePath(`/admin/sesiones/${sesionId}`);
+  revalidatePath("/sesiones");
+  revalidatePath(`/sesiones/${sesionId}`);
 }
 
 export async function marcarTimestampPunto(puntoId: string, sesionId: string, formData: FormData) {

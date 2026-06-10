@@ -31,17 +31,25 @@ export default async function SesionesPublicPage() {
                 <Link href={`/sesiones/${s.id}`} className="font-medium text-slate-900 hover:underline">
                   Sesión {TIPO_SESION[s.tipo]} N° {s.numero}/{s.anio}
                 </Link>
-                <Badge
-                  className={
-                    s.estado === "EN_CURSO"
-                      ? "bg-green-100 text-green-800"
-                      : s.estado === "PROGRAMADA"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-slate-200 text-slate-700"
-                  }
-                >
-                  {ESTADO_SESION[s.estado]}
-                </Badge>
+                <div className="flex gap-2">
+                  <Badge
+                    className={
+                      s.estado === "EN_CURSO"
+                        ? "bg-green-100 text-green-800"
+                        : s.estado === "PROGRAMADA"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-slate-200 text-slate-700"
+                    }
+                  >
+                    {ESTADO_SESION[s.estado]}
+                  </Badge>
+                  {s.estado === "EN_CURSO" && s.videoEnVivoUrl ? (
+                    <Badge className="bg-red-100 text-red-800">En vivo</Badge>
+                  ) : null}
+                  {s.archivada ? (
+                    <Badge className="bg-slate-100 text-slate-600">Archivo</Badge>
+                  ) : null}
+                </div>
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 {fechaHora(s.fecha)} · {s._count.puntos} puntos en el Orden del Día

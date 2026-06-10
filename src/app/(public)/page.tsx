@@ -6,7 +6,11 @@ import { fechaHora, fecha, nroExpediente, TIPO_SESION, TIPO_NORMATIVA, ESTADO_EX
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [proximaSesion, ultimasNormas, autoridades, audiencia] = await Promise.all([
+  const [sesionEnVivo, proximaSesion, ultimasNormas, autoridades, audiencia] = await Promise.all([
+    prisma.sesion.findFirst({
+      where: { estado: "EN_CURSO", publicada: true, videoEnVivoUrl: { not: null } },
+      orderBy: { fecha: "desc" },
+    }),
     prisma.sesion.findFirst({
       where: { estado: { in: ["PROGRAMADA", "EN_CURSO"] }, publicada: true },
       orderBy: { fecha: "asc" },
@@ -29,6 +33,18 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-10">
+      {sesionEnVivo ? (
+        <section className="rounded-2xl border-2 border-red-400 bg-red-50 px-6 py-5">
+          <p className="text-sm font-semibold uppercase tracking-wide text-red-700">Sesión en curso — transmisión en vivo</p>
+          <p className="mt-1 font-medium text-slate-900">
+            Sesión {TIPO_SESION[sesionEnVivo.tipo]} N° {sesionEnVivo.numero}/{sesionEnVivo.anio}
+          </p>
+          <Link href={`/sesiones/${sesionEnVivo.id}`} className="mt-3 inline-block rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">
+            Ver transmisión en vivo
+          </Link>
+        </section>
+      ) : null}
+
       <section className="rounded-2xl bg-gradient-to-r from-[#1e3a5f] to-[#2d5482] px-8 py-12 text-white">
         <h1 className="max-w-2xl text-3xl font-bold sm:text-4xl">
           El Concejo Municipal, abierto a la ciudadanía

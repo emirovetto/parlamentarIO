@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui";
+import { YoutubeEmbed } from "@/components/YoutubeEmbed";
 import { fechaHora, TIPO_SESION, ESTADO_SESION, nroExpediente, VALOR_VOTO } from "@/lib/format";
 
 export const metadata = { title: "Sesión" };
-export const revalidate = 120;
+export const revalidate = 60;
 
 function videoConTimestamp(videoUrl: string, ts?: string | null): string {
   if (!ts) return videoUrl;
@@ -43,6 +44,24 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
         <p className="mt-1 text-sm text-slate-500">{fechaHora(sesion.fecha)}</p>
       </div>
 
+      {sesion.estado === "EN_CURSO" && sesion.videoEnVivoUrl ? (
+        <section aria-labelledby="vivo" className="rounded-xl border-2 border-red-200 bg-white p-6">
+          <h2 id="vivo" className="text-lg font-semibold text-red-700">Transmisión en vivo</h2>
+          <div className="mt-3">
+            <YoutubeEmbed url={sesion.videoEnVivoUrl} title={`Sesión N° ${sesion.numero} en vivo`} />
+          </div>
+        </section>
+      ) : null}
+
+      {sesion.videoUrl && sesion.estado !== "EN_CURSO" ? (
+        <section aria-labelledby="video" className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 id="video" className="text-lg font-semibold text-slate-900">Grabación de la sesión</h2>
+          <div className="mt-3">
+            <YoutubeEmbed url={sesion.videoUrl} title={`Sesión N° ${sesion.numero}`} />
+          </div>
+        </section>
+      ) : null}
+
       <section aria-labelledby="orden" className="rounded-xl border border-slate-200 bg-white p-6">
         <h2 id="orden" className="text-lg font-semibold text-slate-900">Orden del Día</h2>
         <ol className="mt-3 space-y-2">
@@ -75,12 +94,10 @@ export default async function SesionPublicaPage({ params }: { params: Promise<{ 
         </ol>
       </section>
 
-      {sesion.videoUrl ? (
-        <section aria-labelledby="video" className="rounded-xl border border-slate-200 bg-white p-6">
-          <h2 id="video" className="text-lg font-semibold text-slate-900">Video de la sesión</h2>
-          <a href={sesion.videoUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-blue-700 underline">
-            Ver la transmisión completa
-          </a>
+      {sesion.notasPostSesion ? (
+        <section aria-labelledby="notas" className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 id="notas" className="text-lg font-semibold text-slate-900">Observaciones de la sesión</h2>
+          <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{sesion.notasPostSesion}</p>
         </section>
       ) : null}
 

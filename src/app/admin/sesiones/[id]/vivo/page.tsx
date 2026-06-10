@@ -10,8 +10,9 @@ import { Cronometro } from "@/components/Cronometro";
 import {
   marcarAsistencia, registrarMocion, resolverMocion,
   iniciarUsoPalabra, finalizarUsoPalabra,
-  abrirVotacion, cerrarVotacion,
+  abrirVotacion, cerrarVotacion, guardarTransmisionEnVivo,
 } from "../../actions";
+import { YoutubeEmbed } from "@/components/YoutubeEmbed";
 import { TipoVotacion, MayoriaRequerida } from "@/generated/prisma/client";
 
 export const metadata = { title: "Recinto en vivo" };
@@ -77,6 +78,21 @@ export default async function RecintoVivoPage({ params }: { params: Promise<{ id
           </p>
         </div>
       </div>
+
+      <Card>
+        <CardHeader title="Transmisión YouTube" subtitle="Visible en el portal público mientras la sesión está en curso" />
+        <CardBody className="space-y-3">
+          {sesion.videoEnVivoUrl ? <YoutubeEmbed url={sesion.videoEnVivoUrl} title="Transmisión en vivo" /> : null}
+          <form action={guardarTransmisionEnVivo.bind(null, sesion.id)} className="flex flex-wrap items-end gap-3">
+            <div className="min-w-0 flex-1">
+              <Field label="URL de YouTube">
+                <input name="videoEnVivoUrl" type="url" required defaultValue={sesion.videoEnVivoUrl ?? ""} className={inputClass} placeholder="https://www.youtube.com/live/..." />
+              </Field>
+            </div>
+            <button type="submit" className={btnPrimary}>Guardar</button>
+          </form>
+        </CardBody>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Asistencia */}

@@ -56,6 +56,19 @@ export const GESTION_PARTICIPACION: Role[] = [
   Role.SECRETARIO_ADMINISTRATIVO,
 ];
 
+/** Pueden crear y administrar usuarios del sistema */
+export const GESTION_USUARIOS: Role[] = [
+  Role.ADMIN,
+  Role.SECRETARIO_ADMINISTRATIVO,
+];
+
+/** Pueden importar datos históricos (ordenanzas, concejales, bloques) */
+export const GESTION_IMPORTACIONES: Role[] = [
+  Role.ADMIN,
+  Role.SECRETARIO_ADMINISTRATIVO,
+  Role.SECRETARIO_PARLAMENTARIO,
+];
+
 export function hasRole(role: Role | undefined | null, allowed: Role[]): boolean {
   return !!role && allowed.includes(role);
 }
