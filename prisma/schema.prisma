@@ -1,0 +1,505 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum Role {
+  ADMIN
+  PRESIDENTE
+  SECRETARIO_PARLAMENTARIO
+  SECRETARIO_ADMINISTRATIVO
+  CONCEJAL
+  SECRETARIO_BLOQUE
+  EMPLEADO_COMISION
+  CIUDADANO
+}
+
+enum TipoNormativa {
+  ORDENANZA
+  RESOLUCION
+  DECRETO
+  MINUTA_COMUNICACION
+  DECLARACION
+}
+
+enum OrigenExpediente {
+  BLOQUE
+  DEM
+  PARTICULAR
+}
+
+enum EstadoExpediente {
+  INGRESADO
+  EN_COMISION
+  CON_DICTAMEN
+  EN_ORDEN_DEL_DIA
+  APROBADO
+  RECHAZADO
+  COMUNICADO_DEM
+  PROMULGADO
+  VETADO
+  PUBLICADO
+  ARCHIVADO
+}
+
+enum TipoDictamen {
+  FAVORABLE
+  DESFAVORABLE
+  EN_MINORIA
+  DIVIDIDO
+}
+
+enum RolComision {
+  PRESIDENTE
+  VICEPRESIDENTE
+  VOCAL
+}
+
+enum CargoAutoridad {
+  PRESIDENTE
+  VICEPRESIDENTE_1
+  VICEPRESIDENTE_2
+  SECRETARIO_PARLAMENTARIO
+  SECRETARIO_ADMINISTRATIVO
+}
+
+enum TipoSesion {
+  ORDINARIA
+  EXTRAORDINARIA
+  ESPECIAL
+  PREPARATORIA
+}
+
+enum EstadoSesion {
+  PROGRAMADA
+  EN_CURSO
+  FINALIZADA
+  CANCELADA
+}
+
+enum TipoVotacion {
+  NOMINAL
+  POR_SIGNOS
+  UNANIMIDAD
+}
+
+enum MayoriaRequerida {
+  SIMPLE
+  ABSOLUTA
+  DOS_TERCIOS
+}
+
+enum ValorVoto {
+  AFIRMATIVO
+  NEGATIVO
+  ABSTENCION
+}
+
+enum EstadoSolicitud {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  REALIZADA
+}
+
+enum EstadoAudiencia {
+  CONVOCADA
+  INSCRIPCION_ABIERTA
+  REALIZADA
+  CANCELADA
+}
+
+enum CategoriaTransparencia {
+  BOLETIN_OFICIAL
+  DDJJ
+  ESCALA_SALARIAL
+  EJECUCION_PRESUPUESTARIA
+  OTRO
+}
+
+// ─────────────────────── Identidad / Auth ───────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  nombre       String
+  role         Role      @default(CIUDADANO)
+  activo       Boolean   @default(true)
+  concejal     Concejal?
+  bloqueId     String?
+  bloque       Bloque?   @relation(fields: [bloqueId], references: [id])
+  auditLogs    AuditLog[]
+  documentos   Documento[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Bloque {
+  id         String     @id @default(cuid())
+  nombre     String     @unique
+  partido    String
+  color      String     @default("#2563eb")
+  activo     Boolean    @default(true)
+  concejales Concejal[]
+  usuarios   User[]
+  expedientes Expediente[]
+  createdAt  DateTime   @default(now())
+}
+
+model Concejal {
+  id            String     @id @default(cuid())
+  nombre        String
+  apellido      String
+  dni           String?    @unique
+  biografia     String?
+  fotoUrl       String?
+  partido       String
+  mandatoInicio DateTime
+  mandatoFin    DateTime
+  activo        Boolean    @default(true)
+  bloqueId      String
+  bloque        Bloque     @relation(fields: [bloqueId], references: [id])
+  userId        String?    @unique
+  user          User?      @relation(fields: [userId], references: [id])
+  autorias      ExpedienteAutor[]
+  comisiones    ComisionMiembro[]
+  autoridades   Autoridad[]
+  asistencias   Asistencia[]
+  votos         Voto[]
+  usosPalabra   UsoPalabra[]
+  firmasDictamen FirmaDictamen[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Autoridad {
+  id         String         @id @default(cuid())
+  cargo      CargoAutoridad
+  concejalId String
+  concejal   Concejal       @relation(fields: [concejalId], references: [id])
+  desde      DateTime
+  hasta      DateTime?
+}
+
+// ─────────────────────── Comisiones ───────────────────────
+
+model Comision {
+  id          String            @id @default(cuid())
+  nombre      String            @unique
+  descripcion String?
+  activa      Boolean           @default(true)
+  miembros    ComisionMiembro[]
+  giros       GiroComision[]
+  dictamenes  Dictamen[]
+  reuniones   ReunionComision[]
+  createdAt   DateTime          @default(now())
+}
+
+model ComisionMiembro {
+  id         String      @id @default(cuid())
+  comisionId String
+  comision   Comision    @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  concejalId String
+  concejal   Concejal    @relation(fields: [concejalId], references: [id], onDelete: Cascade)
+  rol        RolComision @default(VOCAL)
+
+  @@unique([comisionId, concejalId])
+}
+
+model ReunionComision {
+  id          String   @id @default(cuid())
+  comisionId  String
+  comision    Comision @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  fecha       DateTime
+  ordenDelDia String
+  acta        String?
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────── Expedientes ───────────────────────
+
+model Expediente {
+  id             String           @id @default(cuid())
+  numero         Int
+  anio           Int
+  tipo           TipoNormativa
+  caratula       String
+  descripcion    String?
+  textoCompleto  String
+  versionPublica String?
+  esSensible     Boolean          @default(false)
+  origen         OrigenExpediente
+  estado         EstadoExpediente @default(INGRESADO)
+  bloqueId       String?
+  bloque         Bloque?          @relation(fields: [bloqueId], references: [id])
+  presentadoPor  String?
+  fechaIngreso   DateTime         @default(now())
+  // Plazo de veto (Ley 2756): comunicado al DEM, 10 días hábiles
+  fechaComunicacionDem DateTime?
+  fechaPromulgacion    DateTime?
+  promulgacionAutomatica Boolean  @default(false)
+  numeroNorma    String?
+  autores        ExpedienteAutor[]
+  giros          GiroComision[]
+  dictamenes     Dictamen[]
+  documentos     Documento[]
+  puntosOrden    PuntoOrdenDelDia[]
+  historial      MovimientoExpediente[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([numero, anio, tipo])
+  @@index([estado])
+  @@index([anio, tipo])
+}
+
+model ExpedienteAutor {
+  id           String     @id @default(cuid())
+  expedienteId String
+  expediente   Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  concejalId   String
+  concejal     Concejal   @relation(fields: [concejalId], references: [id], onDelete: Cascade)
+
+  @@unique([expedienteId, concejalId])
+}
+
+model MovimientoExpediente {
+  id           String           @id @default(cuid())
+  expedienteId String
+  expediente   Expediente       @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  estadoDesde  EstadoExpediente?
+  estadoHasta  EstadoExpediente
+  observacion  String?
+  usuario      String?
+  createdAt    DateTime         @default(now())
+}
+
+model GiroComision {
+  id           String     @id @default(cuid())
+  expedienteId String
+  expediente   Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  comisionId   String
+  comision     Comision   @relation(fields: [comisionId], references: [id])
+  orden        Int        @default(1)
+  fechaGiro    DateTime   @default(now())
+
+  @@unique([expedienteId, comisionId])
+}
+
+model Dictamen {
+  id           String        @id @default(cuid())
+  expedienteId String
+  expediente   Expediente    @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  comisionId   String
+  comision     Comision      @relation(fields: [comisionId], references: [id])
+  tipo         TipoDictamen
+  texto        String
+  fecha        DateTime      @default(now())
+  firmas       FirmaDictamen[]
+  puntosOrden  PuntoOrdenDelDia[]
+}
+
+// Firma electrónica interna: hash del texto + firmante + timestamp.
+// Punto de extensión para PKI / Ley 25.506 (token de AC licenciada).
+model FirmaDictamen {
+  id         String   @id @default(cuid())
+  dictamenId String
+  dictamen   Dictamen @relation(fields: [dictamenId], references: [id], onDelete: Cascade)
+  concejalId String
+  concejal   Concejal @relation(fields: [concejalId], references: [id])
+  hashTexto  String
+  firmadoEn  DateTime @default(now())
+
+  @@unique([dictamenId, concejalId])
+}
+
+model Documento {
+  id           String      @id @default(cuid())
+  nombre       String
+  mime         String
+  datos        Bytes
+  hashSha256   String
+  tamanio      Int
+  expedienteId String?
+  expediente   Expediente? @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  audienciaId  String?
+  audiencia    AudienciaPublica? @relation(fields: [audienciaId], references: [id], onDelete: Cascade)
+  categoria    CategoriaTransparencia?
+  titulo       String?
+  publico      Boolean     @default(false)
+  subidoPorId  String?
+  subidoPor    User?       @relation(fields: [subidoPorId], references: [id])
+  createdAt    DateTime    @default(now())
+
+  @@index([categoria])
+}
+
+// ─────────────────────── Sesiones ───────────────────────
+
+model Sesion {
+  id          String       @id @default(cuid())
+  numero      Int
+  anio        Int
+  tipo        TipoSesion   @default(ORDINARIA)
+  estado      EstadoSesion @default(PROGRAMADA)
+  fecha       DateTime
+  videoUrl    String?
+  acta        String?
+  publicada   Boolean      @default(false)
+  puntos      PuntoOrdenDelDia[]
+  asistencias Asistencia[]
+  mociones    Mocion[]
+  votaciones  Votacion[]
+  usosPalabra UsoPalabra[]
+  bancas      SolicitudBanca[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([numero, anio])
+}
+
+model PuntoOrdenDelDia {
+  id             String      @id @default(cuid())
+  sesionId       String
+  sesion         Sesion      @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  orden          Int
+  titulo         String
+  expedienteId   String?
+  expediente     Expediente? @relation(fields: [expedienteId], references: [id])
+  dictamenId     String?
+  dictamen       Dictamen?   @relation(fields: [dictamenId], references: [id])
+  videoTimestamp String?
+  tratado        Boolean     @default(false)
+  votaciones     Votacion[]
+}
+
+model Asistencia {
+  id         String   @id @default(cuid())
+  sesionId   String
+  sesion     Sesion   @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  concejalId String
+  concejal   Concejal @relation(fields: [concejalId], references: [id])
+  presente   Boolean  @default(false)
+  horaMarca  DateTime @default(now())
+
+  @@unique([sesionId, concejalId])
+}
+
+model Mocion {
+  id            String  @id @default(cuid())
+  sesionId      String
+  sesion        Sesion  @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  texto         String
+  presentadaPor String
+  aprobada      Boolean?
+  createdAt     DateTime @default(now())
+}
+
+model UsoPalabra {
+  id              String   @id @default(cuid())
+  sesionId        String
+  sesion          Sesion   @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  concejalId      String
+  concejal        Concejal @relation(fields: [concejalId], references: [id])
+  inicio          DateTime @default(now())
+  duracionSegundos Int?
+}
+
+model Votacion {
+  id          String           @id @default(cuid())
+  sesionId    String
+  sesion      Sesion           @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  puntoId     String?
+  punto       PuntoOrdenDelDia? @relation(fields: [puntoId], references: [id])
+  titulo      String
+  tipo        TipoVotacion     @default(NOMINAL)
+  mayoria     MayoriaRequerida @default(SIMPLE)
+  abierta     Boolean          @default(true)
+  resultado   String?
+  aprobada    Boolean?
+  votos       Voto[]
+  createdAt   DateTime         @default(now())
+  cerradaEn   DateTime?
+}
+
+model Voto {
+  id         String    @id @default(cuid())
+  votacionId String
+  votacion   Votacion  @relation(fields: [votacionId], references: [id], onDelete: Cascade)
+  concejalId String
+  concejal   Concejal  @relation(fields: [concejalId], references: [id])
+  valor      ValorVoto
+  emitidoEn  DateTime  @default(now())
+
+  @@unique([votacionId, concejalId])
+}
+
+// ─────────────────────── Participación ciudadana ───────────────────────
+
+model SolicitudBanca {
+  id             String          @id @default(cuid())
+  nombre         String
+  apellido       String
+  dni            String
+  email          String
+  telefono       String?
+  tema           String
+  fundamentacion String
+  estado         EstadoSolicitud @default(PENDIENTE)
+  sesionId       String?
+  sesion         Sesion?         @relation(fields: [sesionId], references: [id])
+  respuesta      String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model AudienciaPublica {
+  id           String          @id @default(cuid())
+  titulo       String
+  descripcion  String
+  fecha        DateTime
+  lugar        String
+  estado       EstadoAudiencia @default(CONVOCADA)
+  resolucion   String?
+  inscripciones InscripcionAudiencia[]
+  documentos   Documento[]
+  createdAt    DateTime        @default(now())
+}
+
+model InscripcionAudiencia {
+  id          String           @id @default(cuid())
+  audienciaId String
+  audiencia   AudienciaPublica @relation(fields: [audienciaId], references: [id], onDelete: Cascade)
+  nombre      String
+  apellido    String
+  dni         String
+  email       String
+  postura     String?
+  createdAt   DateTime         @default(now())
+
+  @@unique([audienciaId, dni])
+}
+
+// ─────────────────────── Auditoría (append-only) ───────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  accion    String
+  entidad   String
+  entidadId String?
+  datos     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entidad, entidadId])
+  @@index([createdAt])
+}
