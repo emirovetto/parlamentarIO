@@ -9,6 +9,12 @@ import { requireRole, requireUser } from "@/lib/session";
 import { GESTION_SESIONES, PUEDE_VOTAR } from "@/lib/rbac";
 import { EstadoExpediente, EstadoSesion, TipoSesion, TipoVotacion, MayoriaRequerida, ValorVoto } from "@/generated/prisma/client";
 
+function revalidateVivo(sesionId: string) {
+  revalidateVivo(sesionId);
+  revalidatePath(`/recinto/${sesionId}`);
+  revalidatePath(`/recinto/${sesionId}/espera`);
+}
+
 // ── Gestión de sesiones ──
 
 export async function crearSesion(formData: FormData) {
@@ -107,7 +113,7 @@ export async function cambiarEstadoSesion(sesionId: string, estado: EstadoSesion
   await prisma.sesion.update({ where: { id: sesionId }, data: { estado, ...extra } });
   await audit({ userId: user.id, accion: `SESION_${estado}`, entidad: "Sesion", entidadId: sesionId });
   revalidatePath(`/admin/sesiones/${sesionId}`);
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
   revalidatePath("/sesiones");
   revalidatePath("/");
 }
@@ -119,7 +125,7 @@ export async function guardarTransmisionEnVivo(sesionId: string, formData: FormD
   await prisma.sesion.update({ where: { id: sesionId }, data: { videoEnVivoUrl } });
   await audit({ userId: user.id, accion: "GUARDAR_TRANSMISION_VIVO", entidad: "Sesion", entidadId: sesionId, datos: { videoEnVivoUrl } });
   revalidatePath(`/admin/sesiones/${sesionId}`);
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
   revalidatePath("/sesiones");
   revalidatePath("/");
 }
@@ -196,7 +202,7 @@ export async function marcarAsistencia(sesionId: string, concejalId: string, pre
     create: { sesionId, concejalId, presente },
   });
   await audit({ userId: user.id, accion: presente ? "PRESENTE" : "AUSENTE", entidad: "Asistencia", entidadId: `${sesionId}:${concejalId}` });
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
 }
 
 export async function registrarMocion(sesionId: string, formData: FormData) {
@@ -206,14 +212,14 @@ export async function registrarMocion(sesionId: string, formData: FormData) {
     .parse({ texto: formData.get("texto"), presentadaPor: formData.get("presentadaPor") });
   await prisma.mocion.create({ data: { sesionId, ...data } });
   await audit({ userId: user.id, accion: "REGISTRAR_MOCION", entidad: "Sesion", entidadId: sesionId, datos: data });
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
 }
 
 export async function resolverMocion(mocionId: string, sesionId: string, aprobada: boolean) {
   const user = await requireRole(GESTION_SESIONES);
   await prisma.mocion.update({ where: { id: mocionId }, data: { aprobada } });
   await audit({ userId: user.id, accion: aprobada ? "MOCION_APROBADA" : "MOCION_RECHAZADA", entidad: "Mocion", entidadId: mocionId });
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
 }
 
 export async function iniciarUsoPalabra(sesionId: string, formData: FormData) {
@@ -223,14 +229,14 @@ export async function iniciarUsoPalabra(sesionId: string, formData: FormData) {
   await cerrarPalabraAbierta(sesionId);
   await prisma.usoPalabra.create({ data: { sesionId, concejalId } });
   await audit({ userId: user.id, accion: "DAR_PALABRA", entidad: "Sesion", entidadId: sesionId, datos: { concejalId } });
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
 }
 
 export async function finalizarUsoPalabra(sesionId: string) {
   const user = await requireRole(GESTION_SESIONES);
   await cerrarPalabraAbierta(sesionId);
   await audit({ userId: user.id, accion: "QUITAR_PALABRA", entidad: "Sesion", entidadId: sesionId });
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
 }
 
 async function cerrarPalabraAbierta(sesionId: string) {
@@ -266,7 +272,7 @@ export async function abrirVotacion(sesionId: string, formData: FormData) {
     data: { sesionId, titulo: data.titulo, tipo: data.tipo, mayoria: data.mayoria, puntoId: data.puntoId || null },
   });
   await audit({ userId: user.id, accion: "ABRIR_VOTACION", entidad: "Votacion", entidadId: votacion.id, datos: data });
-  revalidatePath(`/admin/sesiones/${sesionId}/vivo`);
+  revalidateVivo(sesionId);
   revalidatePath("/admin/votar");
 }
 
@@ -290,7 +296,7 @@ export async function emitirVoto(votacionId: string, valor: ValorVoto) {
   });
   await audit({ userId: user.id, accion: "VOTAR", entidad: "Votacion", entidadId: votacionId, datos: { valor } });
   revalidatePath("/admin/votar");
-  revalidatePath(`/admin/sesiones/${votacion.sesionId}/vivo`);
+  revalidateVivo(votacion.sesionId);
 }
 
 /**
@@ -351,6 +357,6 @@ export async function cerrarVotacion(votacionId: string) {
   }
 
   await audit({ userId: user.id, accion: "CERRAR_VOTACION", entidad: "Votacion", entidadId: votacionId, datos: { aprobada, resultado } });
-  revalidatePath(`/admin/sesiones/${votacion.sesionId}/vivo`);
+  revalidateVivo(votacion.sesionId);
   revalidatePath("/admin/votar");
 }

@@ -69,6 +69,14 @@ export default async function RecintoVivoPage({ params }: { params: Promise<{ id
             Recinto digital — Sesión {TIPO_SESION[sesion.tipo]} N° {sesion.numero}/{sesion.anio}
           </h1>
         </div>
+        <Link
+          href={`/recinto/${sesion.id}`}
+          target="_blank"
+          className="rounded-xl bg-[#0a1628] px-5 py-3 text-center text-white hover:bg-[#152238]"
+        >
+          <p className="text-sm font-semibold text-sky-300">Pantalla del recinto</p>
+          <p className="text-xs text-white/60">1920×1080 · TV / streaming</p>
+        </Link>
         <div className={`rounded-xl px-5 py-3 text-center ${hayQuorum ? "bg-green-100" : "bg-red-100"}`} role="status">
           <p className={`text-2xl font-bold ${hayQuorum ? "text-green-800" : "text-red-800"}`}>
             {presentes.length}/{totalCuerpo}
